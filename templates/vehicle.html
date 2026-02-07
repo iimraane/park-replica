@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un véhicule - PayByPhone{% endblock %}
+
+{% block content %}
+<div class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <div class="bg-pbp-surface px-4 py-4 flex items-center">
+        <a href="/" class="p-2 -ml-2 hover:bg-pbp-surface-light rounded-lg transition-all">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </a>
+    </div>
+
+    <!-- Title -->
+    <div class="px-4 py-6">
+        <h1 class="text-2xl font-bold">Ajouter un véhicule</h1>
+    </div>
+
+    <!-- Zone Info Card -->
+    <div class="px-4 mb-6">
+        <div class="bg-pbp-surface rounded-xl p-4 flex items-center gap-4">
+            <div class="w-10 h-10 bg-pbp-green/20 rounded-full flex items-center justify-center">
+                <svg class="w-5 h-5 text-pbp-green" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-semibold">{{ zone_code }}</p>
+                <p class="text-sm text-gray-400">{{ zone_info.name }}</p>
+                <p class="text-xs text-gray-500">{{ zone_info.city }}</p>
+            </div>
+            <span class="text-xs text-gray-400">&gt;5 km</span>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            </svg>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form action="/vehicle/{{ zone_code }}" method="POST" enctype="multipart/form-data"
+        class="flex-1 flex flex-col px-4" id="vehicleForm">
+        <!-- Photo upload -->
+        <label
+            class="bg-pbp-surface rounded-xl p-4 flex items-center justify-between mb-4 cursor-pointer hover:bg-pbp-surface-light transition-all">
+            <div class="flex items-center gap-3">
+                <div id="photoPreviewContainer"
+                    class="w-10 h-10 bg-pbp-green/20 rounded-lg flex items-center justify-center overflow-hidden">
+                    <svg id="photoIcon" class="w-5 h-5 text-pbp-green" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <img id="photoPreview" class="w-full h-full object-cover hidden" alt="Preview">
+                </div>
+                <span id="photoText" class="text-gray-300">Ajouter une photo du véhicule</span>
+            </div>
+            <svg id="photoPlus" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            <svg id="photoCheck" class="w-5 h-5 text-pbp-green hidden" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <input type="file" name="photo" id="photoInput" accept="image/*" class="hidden"
+                onchange="handlePhotoChange(this)">
+        </label>
+
+        <!-- Registration Plate -->
+        <div class="mb-4">
+            <input type="text" name="plate" id="plateInput" placeholder="Immatriculation"
+                class="w-full bg-pbp-surface text-white placeholder-gray-500 rounded-xl py-4 px-4 text-base uppercase tracking-wider"
+                required autocomplete="off" oninput="updateButtonState()">
+        </div>
+
+        <!-- Vehicle Type -->
+        <div class="mb-4">
+            <select name="vehicle_type" id="vehicleType"
+                class="w-full bg-pbp-surface text-white rounded-xl py-4 px-4 text-base appearance-none"
+                style="background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 24 24%22 stroke=%22%236b7280%22%3E%3Cpath stroke-linecap=%22round%22 stroke-linejoin=%22round%22 stroke-width=%222%22 d=%22M19 9l-7 7-7-7%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1.5rem;"
+                onchange="updateButtonState()">
+                <option value="" disabled selected>Type de véhicule</option>
+                <option value="Voiture">Voiture</option>
+                <option value="Moto">Moto</option>
+                <option value="Camionnette">Camionnette</option>
+                <option value="Électrique">Véhicule électrique</option>
+            </select>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-6">
+            <input type="text" name="description" placeholder="Description (optionnel)"
+                class="w-full bg-pbp-surface text-white placeholder-gray-500 rounded-xl py-4 px-4 text-base"
+                autocomplete="off">
+        </div>
+
+        {% if error %}
+        <p class="text-red-400 text-sm mb-4">{{ error }}</p>
+        {% endif %}
+
+        <!-- Spacer -->
+        <div class="flex-1"></div>
+
+        <!-- Submit Button - No hover, turns green when complete -->
+        <div class="pb-6">
+            <button type="submit" id="submitBtn"
+                class="w-full bg-pbp-surface text-gray-400 py-4 rounded-xl font-semibold text-base transition-colors duration-300"
+                disabled>
+                Ajoutez un véhicule
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function handlePhotoChange(input) {
+        const preview = document.getElementById('photoPreview');
+        const icon = document.getElementById('photoIcon');
+        const text = document.getElementById('photoText');
+        const plus = document.getElementById('photoPlus');
+        const check = document.getElementById('photoCheck');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                icon.classList.add('hidden');
+                text.textContent = 'Photo ajoutée';
+                text.classList.add('text-pbp-green');
+                plus.classList.add('hidden');
+                check.classList.remove('hidden');
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function updateButtonState() {
+        const plate = document.getElementById('plateInput').value.trim();
+        const vehicleType = document.getElementById('vehicleType').value;
+        const btn = document.getElementById('submitBtn');
+
+        if (plate.length >= 2 && vehicleType) {
+            btn.disabled = false;
+            btn.classList.remove('bg-pbp-surface', 'text-gray-400');
+            btn.classList.add('bg-pbp-green', 'text-white');
+        } else {
+            btn.disabled = true;
+            btn.classList.add('bg-pbp-surface', 'text-gray-400');
+            btn.classList.remove('bg-pbp-green', 'text-white');
+        }
+    }
+</script>
+{% endblock %}

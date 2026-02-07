@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Sélectionner la durée - PayByPhone{% endblock %}
+
+{% block content %}
+<div class="flex flex-col min-h-screen">
+    <!-- Header with city illustration -->
+    <div class="relative bg-gradient-to-b from-pbp-green/20 to-pbp-dark pt-4 pb-20">
+        <!-- Back button -->
+        <button onclick="history.back()"
+            class="absolute top-4 left-4 w-10 h-10 bg-pbp-surface rounded-full flex items-center justify-center hover:bg-pbp-surface-light transition-all z-10">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </button>
+
+        <!-- City skyline decoration -->
+        <div class="absolute inset-x-0 top-0 h-32 overflow-hidden opacity-30">
+            <svg class="w-full h-full" viewBox="0 0 400 100" fill="none" preserveAspectRatio="xMidYMax slice">
+                <rect x="20" y="40" width="30" height="60" fill="#4ADE80" />
+                <rect x="60" y="20" width="25" height="80" fill="#4ADE80" />
+                <rect x="95" y="50" width="20" height="50" fill="#4ADE80" />
+                <rect x="125" y="30" width="35" height="70" fill="#4ADE80" />
+                <rect x="170" y="45" width="25" height="55" fill="#4ADE80" />
+                <rect x="205" y="25" width="30" height="75" fill="#4ADE80" />
+                <rect x="245" y="55" width="20" height="45" fill="#4ADE80" />
+                <rect x="275" y="35" width="28" height="65" fill="#4ADE80" />
+                <rect x="315" y="50" width="22" height="50" fill="#4ADE80" />
+                <rect x="345" y="30" width="35" height="70" fill="#4ADE80" />
+            </svg>
+        </div>
+
+        <!-- Zone title -->
+        <div class="relative z-10 px-4 pt-16">
+            <h1 class="text-2xl font-bold">{{ zone_info.name }}</h1>
+            <p class="text-gray-400">{{ zone_info.city }}</p>
+        </div>
+
+        <!-- Clock icon -->
+        <div class="absolute right-4 top-16">
+            <div class="w-12 h-12 bg-pbp-surface/50 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 -mt-8 bg-pbp-dark rounded-t-3xl relative z-10">
+        <div class="px-4 py-6">
+            <!-- Section title -->
+            <h2 class="text-center text-lg font-semibold mb-6">Sélectionner la durée</h2>
+
+            <!-- Info banner -->
+            <div class="bg-pbp-surface rounded-xl p-4 mb-6">
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="text-sm flex-1">
+                        <p class="text-white">Payant Lun - Sam de 9h à 19h</p>
+                        <p class="text-gray-400" id="shortInfo">Gratuit dimanche, Août et jours fériés...</p>
+                        <div id="fullInfo" class="hidden mt-2 text-gray-400 space-y-1">
+                            <p>• Gratuit le dimanche toute la journée</p>
+                            <p>• Gratuit les jours fériés</p>
+                            <p>• Gratuit au mois d'Août</p>
+                            <p>• Stationnement limité à 3h maximum</p>
+                            <p>• Tarif préférentiel pour les véhicules électriques</p>
+                            <p>• Zone réservée aux résidents après 19h</p>
+                        </div>
+                        <button type="button" onclick="toggleInfo()" class="text-pbp-green font-medium mt-1"
+                            id="toggleBtn">Voir plus</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location & Vehicle cards -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-pbp-surface rounded-xl p-4">
+                    <span class="text-xs bg-pbp-green/20 text-pbp-green px-2 py-1 rounded-full">Emplacement</span>
+                    <p class="text-lg font-semibold mt-2">{{ session.zone_code }}</p>
+                </div>
+                <div class="bg-pbp-surface rounded-xl p-4">
+                    <span class="text-xs bg-pbp-green/20 text-pbp-green px-2 py-1 rounded-full">Véhicule</span>
+                    <p class="text-lg font-semibold mt-2">{{ session.plate }}</p>
+                </div>
+            </div>
+
+            <!-- Duration section -->
+            <h3 class="font-semibold mb-4">Saisissez la durée</h3>
+
+            <!-- Visitor info -->
+            <div class="bg-pbp-surface rounded-xl p-4 mb-4 flex items-center gap-3">
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                <span>Visiteur - {{ zone_info.name.split(' - ')[-1] if ' - ' in zone_info.name else 'Zone standard'
+                    }}</span>
+            </div>
+
+            <!-- Duration form -->
+            <form action="/duration/{{ session.id }}" method="POST" id="durationForm">
+                <div class="flex gap-3 mb-4">
+                    <input type="number" name="duration" id="durationInput" placeholder="Saisir la durée"
+                        class="flex-1 bg-pbp-surface text-white placeholder-gray-500 rounded-xl py-4 px-4 text-base"
+                        min="1" max="1440" required oninput="updatePrice()">
+                    <select id="unitSelect" class="bg-pbp-surface text-white rounded-xl py-4 px-4 appearance-none"
+                        style="background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 fill=%22none%22 viewBox=%220 0 24 24%22 stroke=%22%236b7280%22%3E%3Cpath stroke-linecap=%22round%22 stroke-linejoin=%22round%22 stroke-width=%222%22 d=%22M19 9l-7 7-7-7%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.2rem; padding-right: 2rem;"
+                        onchange="updatePrice()">
+                        <option value="minute">minute</option>
+                        <option value="hour">heure</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic price display -->
+                <div id="priceInfo" class="bg-pbp-green/10 border border-pbp-green/30 rounded-xl p-4 mb-4 hidden">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-300">Prix estimé</span>
+                        <span id="priceDisplay" class="text-xl font-bold text-pbp-green">0.00 €</span>
+                    </div>
+                    <p id="roundingInfo" class="text-xs text-gray-400 mt-1"></p>
+                </div>
+
+                <!-- Submit button -->
+                <button type="submit" id="confirmBtn"
+                    class="w-full bg-pbp-surface text-gray-400 py-4 rounded-xl font-semibold text-base transition-all duration-300">
+                    Confirmer la durée
+                </button>
+            </form>
+
+            <!-- Quick duration pills -->
+            <div class="flex flex-wrap gap-2 mt-4">
+                {% for mins, price in pricing.items() %}
+                <button type="button" onclick="selectDuration({{ mins }})"
+                    class="duration-pill bg-pbp-surface-light hover:bg-pbp-green hover:text-white text-sm py-2 px-4 rounded-full transition-all"
+                    data-duration="{{ mins }}">
+                    {% if mins < 60 %} {{ mins }} min - {{ "%.2f" |format(price) }} € {% else %} {{ mins // 60 }} h{% if
+                        mins % 60 %} {{ mins % 60 }}{% endif %} - {{ "%.2f" |format(price) }} € {% endif %} </button>
+                        {% endfor %}
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const durationInput = document.getElementById('durationInput');
+    const unitSelect = document.getElementById('unitSelect');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const priceInfo = document.getElementById('priceInfo');
+    const priceDisplay = document.getElementById('priceDisplay');
+    const roundingInfo = document.getElementById('roundingInfo');
+    const pills = document.querySelectorAll('.duration-pill');
+
+    // Pricing: 2€ per hour, minimum 1€
+    const RATE_PER_HOUR = 2.00;
+
+    function calculatePrice(minutes) {
+        // Round up to the nearest hour
+        const hours = Math.ceil(minutes / 60);
+        const price = hours * RATE_PER_HOUR;
+        return { hours, price, originalMinutes: minutes };
+    }
+
+    function toggleInfo() {
+        const shortInfo = document.getElementById('shortInfo');
+        const fullInfo = document.getElementById('fullInfo');
+        const toggleBtn = document.getElementById('toggleBtn');
+
+        if (fullInfo.classList.contains('hidden')) {
+            shortInfo.classList.add('hidden');
+            fullInfo.classList.remove('hidden');
+            toggleBtn.textContent = 'Voir moins';
+        } else {
+            shortInfo.classList.remove('hidden');
+            fullInfo.classList.add('hidden');
+            toggleBtn.textContent = 'Voir plus';
+        }
+    }
+
+    function selectDuration(minutes) {
+        durationInput.value = minutes;
+        unitSelect.value = 'minute';
+        updatePrice();
+
+        // Highlight selected pill
+        pills.forEach(pill => {
+            if (parseInt(pill.dataset.duration) === minutes) {
+                pill.classList.add('bg-pbp-green', 'text-white');
+                pill.classList.remove('bg-pbp-surface-light');
+            } else {
+                pill.classList.remove('bg-pbp-green', 'text-white');
+                pill.classList.add('bg-pbp-surface-light');
+            }
+        });
+    }
+
+    function updatePrice() {
+        let inputValue = parseInt(durationInput.value) || 0;
+
+        if (inputValue <= 0) {
+            priceInfo.classList.add('hidden');
+            confirmBtn.classList.add('bg-pbp-surface', 'text-gray-400');
+            confirmBtn.classList.remove('bg-pbp-green', 'text-white');
+            return;
+        }
+
+        // Convert to minutes if hours selected
+        let minutes = inputValue;
+        if (unitSelect.value === 'hour') {
+            minutes = inputValue * 60;
+        }
+
+        // Cap at 1440 minutes (24h)
+        if (minutes > 1440) {
+            minutes = 1440;
+            durationInput.value = unitSelect.value === 'hour' ? 24 : 1440;
+        }
+
+        const result = calculatePrice(minutes);
+
+        priceInfo.classList.remove('hidden');
+        priceDisplay.textContent = result.price.toFixed(2) + ' €';
+
+        // Show rounding info if applicable
+        if (result.originalMinutes % 60 !== 0) {
+            roundingInfo.textContent = `Durée facturée: ${result.hours}h (majoration à l'heure supérieure)`;
+        } else {
+            roundingInfo.textContent = '';
+        }
+
+        // Update hidden input to use rounded value
+        durationInput.setAttribute('data-actual-minutes', result.hours * 60);
+
+        confirmBtn.classList.remove('bg-pbp-surface', 'text-gray-400');
+        confirmBtn.classList.add('bg-pbp-green', 'text-white');
+
+        // Unhighlight pills if manual input
+        pills.forEach(pill => {
+            pill.classList.remove('bg-pbp-green', 'text-white');
+            pill.classList.add('bg-pbp-surface-light');
+        });
+    }
+
+    // Override form submission to use rounded minutes
+    document.getElementById('durationForm').addEventListener('submit', function (e) {
+        const actualMinutes = durationInput.getAttribute('data-actual-minutes');
+        if (actualMinutes) {
+            durationInput.value = actualMinutes;
+        } else {
+            // Round up manually if not set
+            let minutes = parseInt(durationInput.value) || 0;
+            if (unitSelect.value === 'hour') {
+                minutes = minutes * 60;
+            }
+            const hours = Math.ceil(minutes / 60);
+            durationInput.value = hours * 60;
+        }
+    });
+</script>
+{% endblock %}
