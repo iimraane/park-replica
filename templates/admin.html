@@ -27,6 +27,13 @@
         box-sizing: border-box;
     }
 
+    /* Override base.html container */
+    body>div.min-h-screen {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         background: var(--dark-bg);
@@ -227,13 +234,14 @@
     }
 
     /* Dashboard Container */
+    /* Dashboard Layout - Full Width */
     .dashboard {
         display: none;
         opacity: 0;
         transition: opacity 0.5s ease;
-        padding: 24px;
-        max-width: 1600px;
-        margin: 0 auto;
+        padding: 24px 40px;
+        width: 100%;
+        min-height: 100vh;
     }
 
     .dashboard.visible {
@@ -970,7 +978,28 @@
         margin-top: 4px;
     }
 
-    /* Responsive */
+    /* Responsive Design */
+
+    /* Tablet and smaller laptops */
+    @media (max-width: 1200px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .footer-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .tables-section {
+            grid-template-columns: 1fr;
+        }
+
+        .actions-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Tablets */
     @media (max-width: 768px) {
         .dashboard {
             padding: 16px;
@@ -978,26 +1007,132 @@
 
         .dashboard-header {
             flex-direction: column;
-            align-items: flex-start;
+            align-items: stretch;
+            gap: 16px;
+        }
+
+        .header-left {
+            justify-content: center;
+        }
+
+        .header-title {
+            text-align: center;
         }
 
         .header-right {
             width: 100%;
-            justify-content: flex-start;
+            justify-content: center;
             flex-wrap: wrap;
+            gap: 12px;
         }
 
-        .charts-section,
-        .tables-section {
-            grid-template-columns: 1fr;
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            padding: 16px;
         }
 
         .stat-card .value {
-            font-size: 24px;
+            font-size: 22px;
+        }
+
+        .charts-section {
+            margin-bottom: 24px;
+        }
+
+        .chart-container {
+            height: 250px !important;
+        }
+
+        .actions-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .telegram-section {
+            padding: 16px;
+        }
+
+        .footer-stats {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .footer-stat-value {
+            font-size: 20px;
         }
 
         .table-search {
             width: 100%;
+        }
+    }
+
+    /* Mobile phones */
+    @media (max-width: 480px) {
+        .dashboard {
+            padding: 12px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-card {
+            padding: 12px;
+        }
+
+        .stat-card .value {
+            font-size: 18px;
+        }
+
+        .stat-card h3 {
+            font-size: 11px;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+        }
+
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-btn {
+            padding: 14px;
+        }
+
+        .footer-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .footer-stat-value {
+            font-size: 16px;
+        }
+
+        .live-indicator {
+            padding: 8px 14px;
+            font-size: 12px;
+        }
+
+        .refresh-btn,
+        .logout-btn {
+            padding: 10px 16px;
+            font-size: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 22px;
+        }
+
+        .telegram-header h3 {
+            font-size: 14px;
         }
     }
 
