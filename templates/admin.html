@@ -837,6 +837,108 @@
         color: #f093fb;
     }
 
+    /* Telegram Section */
+    .telegram-section {
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 32px;
+        backdrop-filter: blur(20px);
+    }
+
+    .telegram-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .telegram-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .telegram-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .telegram-info {
+        flex: 1;
+    }
+
+    .telegram-info p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .telegram-info .subscribers-count {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    .telegram-info .subscribers-count i {
+        color: #38ef7d;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        width: 60px;
+        height: 32px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.1);
+        transition: 0.4s;
+        border-radius: 32px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 24px;
+        width: 24px;
+        left: 3px;
+        bottom: 3px;
+        background: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+
+    .toggle-switch input:checked+.toggle-slider {
+        background: var(--success-gradient);
+        border-color: transparent;
+    }
+
+    .toggle-switch input:checked+.toggle-slider:before {
+        transform: translateX(28px);
+    }
+
     /* Footer Stats */
     .footer-stats {
         display: grid;
@@ -1183,6 +1285,27 @@
                 <i class="fas fa-map"></i>
                 <span>Voir Toutes les Zones</span>
             </button>
+        </div>
+    </div>
+
+    <!-- Telegram Notifications -->
+    <div class="telegram-section">
+        <div class="telegram-header">
+            <h3><i class="fab fa-telegram" style="color: #0088cc;"></i> Notifications Telegram</h3>
+            <label class="toggle-switch">
+                <input type="checkbox" id="telegramToggle" onchange="toggleTelegram()" {{ 'checked' if telegram_enabled
+                    else '' }}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="telegram-content">
+            <div class="telegram-info">
+                <p>Recevez une notification Telegram à chaque nouvelle session de stationnement payée.</p>
+                <div class="subscribers-count">
+                    <i class="fas fa-users"></i>
+                    <span id="subscribersCount">{{ subscribers_count }} abonné(s)</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1658,7 +1781,9 @@
                             callback: value => value + '€'
                         }
                     }
-                });
+                }
+            }
+        });
     }
 
     // Action handlers
@@ -1704,6 +1829,28 @@
             .map(([code, info]) => `${code}: ${info.city} - ${info.name}`)
             .join('\n');
         alert('Zones disponibles:\n\n' + zonesInfo.slice(0, 2000) + '...');
+    }
+
+    // Telegram toggle
+    async function toggleTelegram() {
+        const toggle = document.getElementById('telegramToggle');
+        const enabled = toggle.checked;
+
+        try {
+            const response = await fetch('/api/admin/telegram/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: enabled })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                console.log(`Telegram notifications ${enabled ? 'activées' : 'désactivées'}`);
+            }
+        } catch (error) {
+            console.error('Erreur toggle Telegram:', error);
+            toggle.checked = !enabled; // Revert on error
+        }
     }
 
     // Initialize

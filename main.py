@@ -35,6 +35,7 @@ TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
 # File to store Telegram subscriber chat IDs
 SUBSCRIBERS_FILE = Path(__file__).parent / "telegram_subscribers.json"
+TELEGRAM_STATE_FILE = Path(__file__).parent / "telegram_state.json"
 
 def load_subscribers() -> set:
     """Load subscriber chat IDs from file"""
@@ -51,12 +52,30 @@ def save_subscribers(subscribers: set):
     with open(SUBSCRIBERS_FILE, "w") as f:
         json.dump(list(subscribers), f)
 
+def load_telegram_state() -> bool:
+    """Load Telegram enabled state from file"""
+    if TELEGRAM_STATE_FILE.exists():
+        try:
+            with open(TELEGRAM_STATE_FILE, "r") as f:
+                data = json.load(f)
+                return data.get("enabled", True)
+        except:
+            return True
+    return True  # Default: enabled
+
+def save_telegram_state(enabled: bool):
+    """Save Telegram enabled state to file"""
+    with open(TELEGRAM_STATE_FILE, "w") as f:
+        json.dump({"enabled": enabled}, f)
+
 # Telegram subscribers (chat_ids)
 telegram_subscribers = load_subscribers()
+telegram_enabled = load_telegram_state()
 
 async def send_telegram_notification(message: str):
     """Send notification to all Telegram subscribers"""
-    if not TELEGRAM_BOT_TOKEN or not telegram_subscribers:
+    global telegram_enabled
+    if not TELEGRAM_BOT_TOKEN or not telegram_subscribers or not telegram_enabled:
         return
     
     async with httpx.AsyncClient() as client:
@@ -485,23 +504,6 @@ async def send_telegram_message(chat_id: int, message: str):
             print(f"Failed to send Telegram message: {e}")
 
 
-@app.get("/telegram/setup")
-async def setup_telegram_webhook(request: Request):
-    """Setup Telegram webhook (call this once after deployment)"""
-    if not TELEGRAM_BOT_TOKEN:
-        return {"error": "TELEGRAM_BOT_TOKEN not configured"}
-    
-    base_url = str(request.base_url).rstrip("/")
-    webhook_url = f"{base_url}/telegram/webhook"
-    
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{TELEGRAM_API_URL}/setWebhook",
-            json={"url": webhook_url}
-        )
-        return response.json()
-
-
 def serialize_sessions():
     """Serialize sessions for JSON (handle datetime objects)"""
     serialized = {}
@@ -525,7 +527,9 @@ async def admin_dashboard(request: Request):
         "request": request,
         "sessions_json": sessions_json,
         "zones_json": zones_json,
-        "admin_password": ADMIN_PASSWORD
+        "admin_password": ADMIN_PASSWORD,
+        "telegram_enabled": telegram_enabled,
+        "subscribers_count": len(telegram_subscribers)
     })
 
 
@@ -533,6 +537,20 @@ async def admin_dashboard(request: Request):
 async def api_admin_sessions():
     """API endpoint for admin to get sessions data"""
     return serialize_sessions()
+
+
+@app.post("/api/admin/telegram/toggle")
+async def api_telegram_toggle(request: Request):
+    """Toggle Telegram notifications on/off"""
+    global telegram_enabled
+    try:
+        data = await request.json()
+        enabled = data.get("enabled", True)
+        telegram_enabled = enabled
+        save_telegram_state(enabled)
+        return {"success": True, "enabled": telegram_enabled}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/admin/stats")
