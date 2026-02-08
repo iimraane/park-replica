@@ -1,0 +1,1695 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - PayByPhone{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        --warning-gradient: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+        --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --dark-bg: #0f0f23;
+        --card-bg: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --text-muted: rgba(255, 255, 255, 0.4);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--dark-bg);
+        min-height: 100vh;
+        color: var(--text-primary);
+        overflow-x: hidden;
+    }
+
+    /* Animated Background */
+    .bg-animation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        overflow: hidden;
+    }
+
+    .bg-animation::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 40%, rgba(240, 147, 251, 0.08) 0%, transparent 50%);
+        animation: bgRotate 30s linear infinite;
+    }
+
+    @keyframes bgRotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Password Modal */
+    .password-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(20px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 1;
+        transition: opacity 0.5s ease;
+    }
+
+    .password-modal.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .password-card {
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 48px;
+        max-width: 420px;
+        width: 90%;
+        text-align: center;
+        backdrop-filter: blur(40px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .password-card .icon {
+        width: 80px;
+        height: 80px;
+        background: var(--primary-gradient);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        font-size: 32px;
+        box-shadow: 0 10px 30px -10px rgba(102, 126, 234, 0.5);
+    }
+
+    .password-card h2 {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .password-card p {
+        color: var(--text-secondary);
+        margin-bottom: 32px;
+    }
+
+    .password-input-wrapper {
+        position: relative;
+        margin-bottom: 24px;
+    }
+
+    .password-input {
+        width: 100%;
+        padding: 16px 50px 16px 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid var(--glass-border);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .password-input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 18px;
+        transition: color 0.3s ease;
+    }
+
+    .password-toggle:hover {
+        color: var(--text-primary);
+    }
+
+    .password-submit {
+        width: 100%;
+        padding: 16px;
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .password-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px -10px rgba(102, 126, 234, 0.5);
+    }
+
+    .password-error {
+        color: #f5576c;
+        font-size: 14px;
+        margin-top: 16px;
+        display: none;
+        animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+    }
+
+    .password-error.show {
+        display: block;
+    }
+
+    /* Dashboard Container */
+    .dashboard {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        padding: 24px;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .dashboard.visible {
+        display: block;
+        opacity: 1;
+    }
+
+    /* Header */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .logo {
+        width: 48px;
+        height: 48px;
+        background: var(--primary-gradient);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        box-shadow: 0 10px 30px -10px rgba(102, 126, 234, 0.5);
+    }
+
+    .header-title h1 {
+        font-size: 28px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .header-title p {
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .live-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: rgba(56, 239, 125, 0.1);
+        border: 1px solid rgba(56, 239, 125, 0.3);
+        border-radius: 100px;
+        font-size: 14px;
+        color: #38ef7d;
+    }
+
+    .live-dot {
+        width: 8px;
+        height: 8px;
+        background: #38ef7d;
+        border-radius: 50%;
+        animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .refresh-btn {
+        padding: 12px 24px;
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .refresh-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .refresh-btn.spinning i {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    .logout-btn {
+        padding: 12px 24px;
+        background: rgba(245, 87, 108, 0.1);
+        border: 1px solid rgba(245, 87, 108, 0.3);
+        border-radius: 12px;
+        color: #f5576c;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+        background: rgba(245, 87, 108, 0.2);
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 24px;
+        backdrop-filter: blur(20px);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--primary-gradient);
+        border-radius: 20px 20px 0 0;
+    }
+
+    .stat-card.revenue::before { background: var(--success-gradient); }
+    .stat-card.sessions::before { background: var(--info-gradient); }
+    .stat-card.active::before { background: var(--warning-gradient); }
+    .stat-card.zones::before { background: var(--secondary-gradient); }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .stat-info h3 {
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+    }
+
+    .stat-info .value {
+        font-size: 32px;
+        font-weight: 800;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .stat-card.revenue .stat-icon { background: rgba(56, 239, 125, 0.15); color: #38ef7d; }
+    .stat-card.sessions .stat-icon { background: rgba(79, 172, 254, 0.15); color: #4facfe; }
+    .stat-card.active .stat-icon { background: rgba(247, 183, 51, 0.15); color: #f7b733; }
+    .stat-card.zones .stat-icon { background: rgba(240, 147, 251, 0.15); color: #f093fb; }
+
+    .stat-trend {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .stat-trend.up { color: #38ef7d; }
+    .stat-trend.down { color: #f5576c; }
+
+    /* Charts Section */
+    .charts-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .chart-card {
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 24px;
+        backdrop-filter: blur(20px);
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .chart-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .chart-tabs {
+        display: flex;
+        gap: 8px;
+    }
+
+    .chart-tab {
+        padding: 8px 16px;
+        background: transparent;
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: var(--text-muted);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .chart-tab.active {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        color: white;
+    }
+
+    .chart-container {
+        height: 280px;
+        position: relative;
+    }
+
+    /* Tables Section */
+    .tables-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .table-card {
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        overflow: hidden;
+        backdrop-filter: blur(20px);
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .table-header h3 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .table-header h3 .count {
+        padding: 4px 12px;
+        background: rgba(102, 126, 234, 0.2);
+        border-radius: 100px;
+        font-size: 13px;
+        color: #667eea;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .table-search {
+        padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        color: var(--text-primary);
+        font-size: 14px;
+        width: 200px;
+    }
+
+    .table-search::placeholder {
+        color: var(--text-muted);
+    }
+
+    .table-search:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 16px 24px;
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    td {
+        padding: 16px 24px;
+        border-top: 1px solid var(--glass-border);
+        font-size: 14px;
+    }
+
+    tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .plate-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-badge.active {
+        background: rgba(56, 239, 125, 0.15);
+        color: #38ef7d;
+    }
+
+    .status-badge.expired {
+        background: rgba(245, 87, 108, 0.15);
+        color: #f5576c;
+    }
+
+    .status-badge.pending {
+        background: rgba(247, 183, 51, 0.15);
+        color: #f7b733;
+    }
+
+    .price-badge {
+        font-weight: 700;
+        color: #38ef7d;
+    }
+
+    /* Zone Stats */
+    .zone-stats {
+        padding: 24px;
+    }
+
+    .zone-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .zone-item:last-child {
+        border-bottom: none;
+    }
+
+    .zone-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .zone-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-gradient);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+
+    .zone-name {
+        font-weight: 600;
+    }
+
+    .zone-city {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .zone-stats-values {
+        text-align: right;
+    }
+
+    .zone-count {
+        font-weight: 700;
+    }
+
+    .zone-revenue {
+        font-size: 12px;
+        color: #38ef7d;
+    }
+
+    .zone-bar {
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 100px;
+        margin-top: 12px;
+        overflow: hidden;
+    }
+
+    .zone-bar-fill {
+        height: 100%;
+        background: var(--primary-gradient);
+        border-radius: 100px;
+        transition: width 1s ease;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 32px;
+        backdrop-filter: blur(20px);
+    }
+
+    .quick-actions h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateY(-2px);
+    }
+
+    .action-btn i {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        font-size: 18px;
+    }
+
+    .action-btn.export i { background: rgba(56, 239, 125, 0.15); color: #38ef7d; }
+    .action-btn.analytics i { background: rgba(79, 172, 254, 0.15); color: #4facfe; }
+    .action-btn.settings i { background: rgba(247, 183, 51, 0.15); color: #f7b733; }
+    .action-btn.zones i { background: rgba(240, 147, 251, 0.15); color: #f093fb; }
+
+    /* Footer Stats */
+    .footer-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        padding: 24px;
+        background: var(--card-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        backdrop-filter: blur(20px);
+    }
+
+    .footer-stat {
+        text-align: center;
+        padding: 16px;
+    }
+
+    .footer-stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .footer-stat-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .dashboard {
+            padding: 16px;
+        }
+
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-right {
+            width: 100%;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .charts-section,
+        .tables-section {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+        }
+
+        .table-search {
+            width: 100%;
+        }
+    }
+
+    /* No Data State */
+    .no-data {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+    }
+
+    .no-data i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    .no-data p {
+        font-size: 16px;
+    }
+
+    /* Loading Animation */
+    .loading-skeleton {
+        background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+        background-size: 200% 100%;
+        animation: skeleton 1.5s ease infinite;
+        border-radius: 8px;
+    }
+
+    @keyframes skeleton {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* Time Display */
+    .time-display {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .time-display .time {
+        font-weight: 600;
+    }
+
+    .time-display .date {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    /* Countdown */
+    .countdown {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+        padding: 4px 10px;
+        background: rgba(247, 183, 51, 0.15);
+        border-radius: 6px;
+        color: #f7b733;
+    }
+
+    .countdown.expired {
+        background: rgba(245, 87, 108, 0.15);
+        color: #f5576c;
+    }
+
+    /* Vehicle Type Badge */
+    .vehicle-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: rgba(102, 126, 234, 0.15);
+        border-radius: 6px;
+        font-size: 12px;
+        color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-animation"></div>
+
+<!-- Password Modal -->
+<div class="password-modal" id="passwordModal">
+    <div class="password-card">
+        <div class="icon">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h2>Admin Dashboard</h2>
+        <p>Entrez le mot de passe administrateur pour accéder au tableau de bord</p>
+        <form id="passwordForm">
+            <div class="password-input-wrapper">
+                <input type="password" class="password-input" id="passwordInput" placeholder="Mot de passe..." autocomplete="off">
+                <button type="button" class="password-toggle" id="togglePassword">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <button type="submit" class="password-submit">
+                <i class="fas fa-unlock-alt"></i> Accéder au Dashboard
+            </button>
+            <p class="password-error" id="passwordError">
+                <i class="fas fa-exclamation-circle"></i> Mot de passe incorrect
+            </p>
+        </form>
+    </div>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard">
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-parking"></i>
+            </div>
+            <div class="header-title">
+                <h1>PayByPhone Admin</h1>
+                <p id="currentDateTime">Chargement...</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="live-indicator">
+                <div class="live-dot"></div>
+                <span>En direct</span>
+            </div>
+            <button class="refresh-btn" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i>
+                Actualiser
+            </button>
+            <button class="logout-btn" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                Déconnexion
+            </button>
+        </div>
+    </header>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card revenue">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>Revenus Totaux</h3>
+                    <div class="value" id="totalRevenue">0,00 €</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-euro-sign"></i>
+                </div>
+            </div>
+            <div class="stat-trend up">
+                <i class="fas fa-arrow-up"></i>
+                <span>+12.5% vs hier</span>
+            </div>
+        </div>
+
+        <div class="stat-card sessions">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>Sessions Totales</h3>
+                    <div class="value" id="totalSessions">0</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+            </div>
+            <div class="stat-trend up">
+                <i class="fas fa-arrow-up"></i>
+                <span id="paidSessionsCount">0 payées</span>
+            </div>
+        </div>
+
+        <div class="stat-card active">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>Sessions Actives</h3>
+                    <div class="value" id="activeSessions">0</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+            <div class="stat-trend">
+                <i class="fas fa-parking"></i>
+                <span>En cours</span>
+            </div>
+        </div>
+
+        <div class="stat-card zones">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>Zones Actives</h3>
+                    <div class="value" id="activeZones">0</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+            </div>
+            <div class="stat-trend">
+                <i class="fas fa-city"></i>
+                <span>Île-de-France</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Stats Row -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>Durée Moyenne</h3>
+                    <div class="value" id="avgDuration">0 min</div>
+                </div>
+                <div class="stat-icon" style="background: rgba(102, 126, 234, 0.15); color: #667eea;">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>Ticket Moyen</h3>
+                    <div class="value" id="avgTicket">0,00 €</div>
+                </div>
+                <div class="stat-icon" style="background: rgba(17, 153, 142, 0.15); color: #11998e;">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>Taux de Conversion</h3>
+                    <div class="value" id="conversionRate">0%</div>
+                </div>
+                <div class="stat-icon" style="background: rgba(79, 172, 254, 0.15); color: #4facfe;">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-info">
+                    <h3>Sessions Expirées</h3>
+                    <div class="value" id="expiredSessions">0</div>
+                </div>
+                <div class="stat-icon" style="background: rgba(245, 87, 108, 0.15); color: #f5576c;">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-line" style="color: #667eea; margin-right: 8px;"></i> Revenus par Heure</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-bar" style="color: #38ef7d; margin-right: 8px;"></i> Sessions par Zone</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="zoneChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h3><i class="fas fa-bolt" style="color: #f7b733;"></i> Actions Rapides</h3>
+        <div class="actions-grid">
+            <button class="action-btn export" onclick="exportData()">
+                <i class="fas fa-file-export"></i>
+                <span>Exporter les Données</span>
+            </button>
+            <button class="action-btn analytics" onclick="showDetailedAnalytics()">
+                <i class="fas fa-chart-pie"></i>
+                <span>Analytiques Détaillées</span>
+            </button>
+            <button class="action-btn settings" onclick="showSettings()">
+                <i class="fas fa-cog"></i>
+                <span>Paramètres</span>
+            </button>
+            <button class="action-btn zones" onclick="viewAllZones()">
+                <i class="fas fa-map"></i>
+                <span>Voir Toutes les Zones</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tables Section -->
+    <div class="tables-section">
+        <!-- Sessions Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <h3>
+                    <i class="fas fa-list" style="color: #667eea;"></i>
+                    Toutes les Sessions
+                    <span class="count" id="sessionCount">0</span>
+                </h3>
+                <div class="table-actions">
+                    <input type="text" class="table-search" id="sessionSearch" placeholder="Rechercher...">
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="sessionsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Plaque</th>
+                            <th>Zone</th>
+                            <th>Durée</th>
+                            <th>Prix</th>
+                            <th>Statut</th>
+                            <th>Créé</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessionsTableBody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Zone Rankings -->
+        <div class="table-card">
+            <div class="table-header">
+                <h3>
+                    <i class="fas fa-trophy" style="color: #f7b733;"></i>
+                    Top Zones
+                </h3>
+            </div>
+            <div class="zone-stats" id="zoneStats">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Stats -->
+    <div class="footer-stats">
+        <div class="footer-stat">
+            <div class="footer-stat-value" id="todayRevenue">0,00 €</div>
+            <div class="footer-stat-label">Revenus Aujourd'hui</div>
+        </div>
+        <div class="footer-stat">
+            <div class="footer-stat-value" id="todaySessions">0</div>
+            <div class="footer-stat-label">Sessions Aujourd'hui</div>
+        </div>
+        <div class="footer-stat">
+            <div class="footer-stat-value" id="peakHour">--:--</div>
+            <div class="footer-stat-label">Heure de Pointe</div>
+        </div>
+        <div class="footer-stat">
+            <div class="footer-stat-value" id="topZone">-</div>
+            <div class="footer-stat-label">Zone #1</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Configuration
+    const ADMIN_PASSWORD = '{{ admin_password }}';
+    const STORAGE_KEY = 'paybyphone_admin_auth';
+
+    // Data from server
+    let sessionsData = {{ sessions_json | safe }};
+    let zonesData = {{ zones_json | safe }};
+
+    // DOM Elements
+    const passwordModal = document.getElementById('passwordModal');
+    const dashboard = document.getElementById('dashboard');
+    const passwordForm = document.getElementById('passwordForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordError = document.getElementById('passwordError');
+    const togglePassword = document.getElementById('togglePassword');
+
+    // Check authentication
+    function checkAuth() {
+        const authData = localStorage.getItem(STORAGE_KEY);
+        if (authData) {
+            try {
+                const { authenticated, timestamp } = JSON.parse(authData);
+                // Session valid for 24 hours
+                if (authenticated && (Date.now() - timestamp) < 24 * 60 * 60 * 1000) {
+                    showDashboard();
+                    return;
+                }
+            } catch (e) {}
+        }
+        showLoginModal();
+    }
+
+    // Show login modal
+    function showLoginModal() {
+        passwordModal.classList.remove('hidden');
+        dashboard.classList.remove('visible');
+        passwordInput.focus();
+    }
+
+    // Show dashboard
+    function showDashboard() {
+        passwordModal.classList.add('hidden');
+        dashboard.classList.add('visible');
+        initDashboard();
+    }
+
+    // Password form handler
+    passwordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const password = passwordInput.value;
+        
+        if (password === ADMIN_PASSWORD) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                authenticated: true,
+                timestamp: Date.now()
+            }));
+            passwordError.classList.remove('show');
+            showDashboard();
+        } else {
+            passwordError.classList.add('show');
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+    });
+
+    // Toggle password visibility
+    togglePassword.addEventListener('click', () => {
+        const type = passwordInput.type === 'password' ? 'text' : 'password';
+        passwordInput.type = type;
+        togglePassword.innerHTML = type === 'password' 
+            ? '<i class="fas fa-eye"></i>' 
+            : '<i class="fas fa-eye-slash"></i>';
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEY);
+        showLoginModal();
+    });
+
+    // Refresh button
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+        this.classList.add('spinning');
+        setTimeout(() => {
+            location.reload();
+        }, 500);
+    });
+
+    // Initialize Dashboard
+    function initDashboard() {
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        calculateStats();
+        renderSessionsTable();
+        renderZoneStats();
+        initCharts();
+    }
+
+    // Update date/time
+    function updateDateTime() {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+        document.getElementById('currentDateTime').textContent = now.toLocaleDateString('fr-FR', options);
+    }
+
+    // Calculate stats
+    function calculateStats() {
+        const sessions = Object.values(sessionsData);
+        
+        // Total revenue & sessions
+        const paidSessions = sessions.filter(s => s.paid);
+        const totalRevenue = paidSessions.reduce((sum, s) => sum + (s.price || 0), 0);
+        const totalSessions = sessions.length;
+        
+        // Active sessions (paid and end_time in future)
+        const now = new Date();
+        const activeSessions = paidSessions.filter(s => {
+            if (!s.end_time) return false;
+            return new Date(s.end_time) > now;
+        });
+
+        // Expired sessions
+        const expiredSessions = paidSessions.filter(s => {
+            if (!s.end_time) return false;
+            return new Date(s.end_time) <= now;
+        });
+
+        // Unique zones
+        const activeZones = new Set(sessions.map(s => s.zone_code)).size;
+
+        // Average duration
+        const avgDuration = sessions.length > 0 
+            ? Math.round(sessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / sessions.length)
+            : 0;
+
+        // Average ticket
+        const avgTicket = paidSessions.length > 0 
+            ? (totalRevenue / paidSessions.length).toFixed(2)
+            : 0;
+
+        // Conversion rate
+        const conversionRate = totalSessions > 0 
+            ? Math.round((paidSessions.length / totalSessions) * 100)
+            : 0;
+
+        // Update UI
+        document.getElementById('totalRevenue').textContent = totalRevenue.toFixed(2).replace('.', ',') + ' €';
+        document.getElementById('totalSessions').textContent = totalSessions;
+        document.getElementById('activeSessions').textContent = activeSessions.length;
+        document.getElementById('activeZones').textContent = activeZones;
+        document.getElementById('avgDuration').textContent = avgDuration + ' min';
+        document.getElementById('avgTicket').textContent = avgTicket.toString().replace('.', ',') + ' €';
+        document.getElementById('conversionRate').textContent = conversionRate + '%';
+        document.getElementById('expiredSessions').textContent = expiredSessions.length;
+        document.getElementById('paidSessionsCount').textContent = paidSessions.length + ' payées';
+        document.getElementById('sessionCount').textContent = totalSessions;
+
+        // Today's stats
+        const today = new Date().toDateString();
+        const todaySessions = sessions.filter(s => {
+            const created = s.created_at ? new Date(s.created_at).toDateString() : null;
+            return created === today;
+        });
+        const todayPaid = todaySessions.filter(s => s.paid);
+        const todayRevenue = todayPaid.reduce((sum, s) => sum + (s.price || 0), 0);
+
+        document.getElementById('todayRevenue').textContent = todayRevenue.toFixed(2).replace('.', ',') + ' €';
+        document.getElementById('todaySessions').textContent = todaySessions.length;
+
+        // Top zone
+        const zoneCounts = {};
+        paidSessions.forEach(s => {
+            zoneCounts[s.zone_code] = (zoneCounts[s.zone_code] || 0) + 1;
+        });
+        const topZoneCode = Object.entries(zoneCounts).sort((a, b) => b[1] - a[1])[0];
+        if (topZoneCode && zonesData[topZoneCode[0]]) {
+            document.getElementById('topZone').textContent = zonesData[topZoneCode[0]].city;
+        }
+
+        // Peak hour
+        const hourCounts = {};
+        paidSessions.forEach(s => {
+            if (s.created_at) {
+                const hour = new Date(s.created_at).getHours();
+                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+            }
+        });
+        const peakHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
+        if (peakHour) {
+            document.getElementById('peakHour').textContent = `${peakHour[0]}:00`;
+        }
+    }
+
+    // Render sessions table
+    function renderSessionsTable() {
+        const tbody = document.getElementById('sessionsTableBody');
+        const sessions = Object.values(sessionsData);
+        
+        if (sessions.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        <div class="no-data">
+                            <i class="fas fa-inbox"></i>
+                            <p>Aucune session pour le moment</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        // Sort by created_at desc
+        sessions.sort((a, b) => {
+            const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+            const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+            return dateB - dateA;
+        });
+
+        tbody.innerHTML = sessions.map(session => {
+            const zone = zonesData[session.zone_code] || { name: session.zone_code, city: 'Inconnu' };
+            const now = new Date();
+            const endTime = session.end_time ? new Date(session.end_time) : null;
+            
+            let statusClass = 'pending';
+            let statusText = 'En attente';
+            
+            if (session.paid) {
+                if (endTime && endTime > now) {
+                    statusClass = 'active';
+                    statusText = 'Actif';
+                } else {
+                    statusClass = 'expired';
+                    statusText = 'Expiré';
+                }
+            }
+
+            const createdDate = session.created_at ? new Date(session.created_at) : null;
+            const createdFormatted = createdDate 
+                ? `<span class="time">${createdDate.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</span>
+                   <span class="date">${createdDate.toLocaleDateString('fr-FR')}</span>`
+                : '-';
+
+            return `
+                <tr>
+                    <td><code style="color: #667eea;">${session.id}</code></td>
+                    <td>
+                        <span class="plate-badge">
+                            <i class="fas fa-car" style="color: var(--text-muted);"></i>
+                            ${session.plate}
+                        </span>
+                    </td>
+                    <td>
+                        <div>
+                            <div style="font-weight: 500;">${zone.city}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">${session.zone_code}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="vehicle-badge">
+                            <i class="fas fa-clock"></i>
+                            ${session.duration_minutes} min
+                        </span>
+                    </td>
+                    <td><span class="price-badge">${(session.price || 0).toFixed(2).replace('.', ',')} €</span></td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td><div class="time-display">${createdFormatted}</div></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Search handler
+    document.getElementById('sessionSearch').addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#sessionsTableBody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+
+    // Render zone stats
+    function renderZoneStats() {
+        const container = document.getElementById('zoneStats');
+        const sessions = Object.values(sessionsData);
+        
+        // Calculate zone stats
+        const zoneStats = {};
+        sessions.filter(s => s.paid).forEach(s => {
+            if (!zoneStats[s.zone_code]) {
+                zoneStats[s.zone_code] = { count: 0, revenue: 0 };
+            }
+            zoneStats[s.zone_code].count++;
+            zoneStats[s.zone_code].revenue += s.price || 0;
+        });
+
+        // Sort by count
+        const sortedZones = Object.entries(zoneStats)
+            .sort((a, b) => b[1].count - a[1].count)
+            .slice(0, 6);
+
+        if (sortedZones.length === 0) {
+            container.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <p>Aucune donnée de zone</p>
+                </div>
+            `;
+            return;
+        }
+
+        const maxCount = sortedZones[0][1].count;
+        
+        container.innerHTML = sortedZones.map(([code, stats], index) => {
+            const zone = zonesData[code] || { name: code, city: 'Inconnu' };
+            const barWidth = (stats.count / maxCount) * 100;
+            
+            return `
+                <div class="zone-item">
+                    <div class="zone-info">
+                        <div class="zone-icon">${index + 1}</div>
+                        <div>
+                            <div class="zone-name">${zone.city}</div>
+                            <div class="zone-city">${code} - ${zone.name}</div>
+                        </div>
+                    </div>
+                    <div class="zone-stats-values">
+                        <div class="zone-count">${stats.count} sessions</div>
+                        <div class="zone-revenue">+${stats.revenue.toFixed(2).replace('.', ',')} €</div>
+                    </div>
+                </div>
+                <div class="zone-bar">
+                    <div class="zone-bar-fill" style="width: ${barWidth}%;"></div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Initialize Charts
+    function initCharts() {
+        const sessions = Object.values(sessionsData).filter(s => s.paid);
+        
+        // Revenue by hour chart
+        const hourlyRevenue = {};
+        for (let i = 0; i < 24; i++) {
+            hourlyRevenue[i] = 0;
+        }
+        
+        sessions.forEach(s => {
+            if (s.created_at) {
+                const hour = new Date(s.created_at).getHours();
+                hourlyRevenue[hour] += s.price || 0;
+            }
+        });
+
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(hourlyRevenue).map(h => `${h}h`),
+                datasets: [{
+                    label: 'Revenus (€)',
+                    data: Object.values(hourlyRevenue),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: 'rgba(255,255,255,0.5)' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { 
+                            color: 'rgba(255,255,255,0.5)',
+                            callback: value => value + '€'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Zone chart
+        const zoneCounts = {};
+        sessions.forEach(s => {
+            const zone = zonesData[s.zone_code];
+            const city = zone ? zone.city : s.zone_code;
+            zoneCounts[city] = (zoneCounts[city] || 0) + 1;
+        });
+
+        const sortedZones = Object.entries(zoneCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+
+        const zoneCtx = document.getElementById('zoneChart').getContext('2d');
+        new Chart(zoneCtx, {
+            type: 'bar',
+            data: {
+                labels: sortedZones.map(z => z[0]),
+                datasets: [{
+                    label: 'Sessions',
+                    data: sortedZones.map(z => z[1]),
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(240, 147, 251, 0.8)',
+                        'rgba(56, 239, 125, 0.8)',
+                        'rgba(79, 172, 254, 0.8)',
+                        'rgba(247, 183, 51, 0.8)',
+                        'rgba(245, 87, 108, 0.8)',
+                        'rgba(17, 153, 142, 0.8)'
+                    ],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: 'rgba(255,255,255,0.5)' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: 'rgba(255,255,255,0.5)' }
+                    }
+                }
+            }
+        });
+    }
+
+    // Action handlers
+    function exportData() {
+        const sessions = Object.values(sessionsData);
+        const csv = [
+            ['ID', 'Plaque', 'Zone', 'Ville', 'Durée (min)', 'Prix (€)', 'Payé', 'Créé'].join(';'),
+            ...sessions.map(s => {
+                const zone = zonesData[s.zone_code] || {};
+                return [
+                    s.id,
+                    s.plate,
+                    s.zone_code,
+                    zone.city || '',
+                    s.duration_minutes,
+                    s.price,
+                    s.paid ? 'Oui' : 'Non',
+                    s.created_at || ''
+                ].join(';');
+            })
+        ].join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `paybyphone_export_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+    }
+
+    function showDetailedAnalytics() {
+        alert('Analytiques détaillées - Fonctionnalité en développement');
+    }
+
+    function showSettings() {
+        const newPassword = prompt('Nouveau mot de passe admin (laisser vide pour annuler):');
+        if (newPassword && newPassword.length > 0) {
+            alert('Pour changer le mot de passe, modifiez ADMIN_PASSWORD dans le fichier .env');
+        }
+    }
+
+    function viewAllZones() {
+        const zonesInfo = Object.entries(zonesData)
+            .map(([code, info]) => `${code}: ${info.city} - ${info.name}`)
+            .join('\n');
+        alert('Zones disponibles:\n\n' + zonesInfo.slice(0, 2000) + '...');
+    }
+
+    // Initialize
+    checkAuth();
+</script>
+{% endblock %}

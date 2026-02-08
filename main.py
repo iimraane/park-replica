@@ -4,6 +4,7 @@ FastAPI + Jinja2 + TailwindCSS + Stripe Checkout
 """
 
 import os
+import json
 from datetime import datetime, timedelta
 from typing import Optional
 import math
@@ -21,6 +22,9 @@ load_dotenv()
 # Stripe configuration
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+
+# Admin configuration
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
 # FastAPI app
 app = FastAPI(title="PayByPhone")
@@ -364,6 +368,60 @@ async def get_price(duration: int):
     """Get price for a specific duration"""
     price = calculate_price(duration)
     return {"duration": duration, "price": price}
+
+
+def serialize_sessions():
+    """Serialize sessions for JSON (handle datetime objects)"""
+    serialized = {}
+    for sid, session in sessions.items():
+        s = dict(session)
+        if s.get("created_at"):
+            s["created_at"] = s["created_at"].isoformat()
+        if s.get("end_time"):
+            s["end_time"] = s["end_time"].isoformat()
+        serialized[sid] = s
+    return serialized
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_dashboard(request: Request):
+    """Admin dashboard page"""
+    sessions_json = json.dumps(serialize_sessions())
+    zones_json = json.dumps(ZONES)
+    
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "sessions_json": sessions_json,
+        "zones_json": zones_json,
+        "admin_password": ADMIN_PASSWORD
+    })
+
+
+@app.get("/api/admin/sessions")
+async def api_admin_sessions():
+    """API endpoint for admin to get sessions data"""
+    return serialize_sessions()
+
+
+@app.get("/api/admin/stats")
+async def api_admin_stats():
+    """API endpoint for admin stats"""
+    all_sessions = list(sessions.values())
+    paid_sessions = [s for s in all_sessions if s.get("paid")]
+    
+    total_revenue = sum(s.get("price", 0) for s in paid_sessions)
+    active_count = sum(
+        1 for s in paid_sessions 
+        if s.get("end_time") and s["end_time"] > datetime.now()
+    )
+    
+    return {
+        "total_sessions": len(all_sessions),
+        "paid_sessions": len(paid_sessions),
+        "active_sessions": active_count,
+        "total_revenue": total_revenue,
+        "zones_count": len(set(s.get("zone_code") for s in all_sessions))
+    }
 
 
 if __name__ == "__main__":
