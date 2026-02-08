@@ -6,3 +6,5 @@ sqlalchemy
 stripe
 python-multipart
 mangum
+python-telegram-bot>=20.0
+httpx

@@ -1,15 +1,18 @@
 """
 PayByPhone - Application de Paiement Parking
-FastAPI + Jinja2 + TailwindCSS + Stripe Checkout
+FastAPI + Jinja2 + TailwindCSS + Stripe Checkout + Telegram Notifications
 """
 
 import os
 import json
+import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 import math
 import uuid
+from pathlib import Path
 
+import httpx
 import stripe
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, HTTPException, Request
@@ -25,6 +28,51 @@ STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
 
 # Admin configuration
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+
+# Telegram configuration
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+
+# File to store Telegram subscriber chat IDs
+SUBSCRIBERS_FILE = Path(__file__).parent / "telegram_subscribers.json"
+
+def load_subscribers() -> set:
+    """Load subscriber chat IDs from file"""
+    if SUBSCRIBERS_FILE.exists():
+        try:
+            with open(SUBSCRIBERS_FILE, "r") as f:
+                return set(json.load(f))
+        except:
+            return set()
+    return set()
+
+def save_subscribers(subscribers: set):
+    """Save subscriber chat IDs to file"""
+    with open(SUBSCRIBERS_FILE, "w") as f:
+        json.dump(list(subscribers), f)
+
+# Telegram subscribers (chat_ids)
+telegram_subscribers = load_subscribers()
+
+async def send_telegram_notification(message: str):
+    """Send notification to all Telegram subscribers"""
+    if not TELEGRAM_BOT_TOKEN or not telegram_subscribers:
+        return
+    
+    async with httpx.AsyncClient() as client:
+        for chat_id in telegram_subscribers:
+            try:
+                await client.post(
+                    f"{TELEGRAM_API_URL}/sendMessage",
+                    json={
+                        "chat_id": chat_id,
+                        "text": message,
+                        "parse_mode": "HTML"
+                    },
+                    timeout=10
+                )
+            except Exception as e:
+                print(f"Failed to send Telegram notification to {chat_id}: {e}")
 
 # FastAPI app
 app = FastAPI(title="PayByPhone")
@@ -330,6 +378,20 @@ async def success_page(request: Request, session_id: str):
     if not session["paid"]:
         session["paid"] = True
         session["end_time"] = datetime.now() + timedelta(minutes=session["duration_minutes"])
+        
+        # Send Telegram notification
+        zone_info = get_zone_info(session["zone_code"])
+        notification_msg = (
+            f"🚗 <b>Nouvelle Session de Stationnement</b>\n\n"
+            f"📍 <b>Zone:</b> {zone_info['name']}\n"
+            f"🏙️ <b>Ville:</b> {zone_info['city']}\n"
+            f"🔢 <b>Plaque:</b> {session['plate']}\n"
+            f"⏱️ <b>Durée:</b> {session['duration_minutes']} minutes\n"
+            f"💰 <b>Prix:</b> {session['price']:.2f}€\n"
+            f"🕐 <b>Fin:</b> {session['end_time'].strftime('%H:%M')}\n\n"
+            f"✅ Paiement confirmé!"
+        )
+        asyncio.create_task(send_telegram_notification(notification_msg))
     
     zone_info = get_zone_info(session["zone_code"])
     
@@ -368,6 +430,76 @@ async def get_price(duration: int):
     """Get price for a specific duration"""
     price = calculate_price(duration)
     return {"duration": duration, "price": price}
+
+
+# ==================== TELEGRAM BOT ====================
+
+@app.post("/telegram/webhook")
+async def telegram_webhook(request: Request):
+    """Handle Telegram webhook updates"""
+    try:
+        data = await request.json()
+        
+        # Handle /start command
+        if "message" in data:
+            message = data["message"]
+            chat_id = message.get("chat", {}).get("id")
+            text = message.get("text", "")
+            
+            if text.startswith("/start") and chat_id:
+                # Add subscriber
+                telegram_subscribers.add(chat_id)
+                save_subscribers(telegram_subscribers)
+                
+                # Send welcome message
+                welcome_msg = (
+                    "🚗 <b>Bienvenue sur PayByPhone Notifications!</b>\n\n"
+                    "Vous recevrez une notification à chaque nouvelle session de stationnement.\n\n"
+                    "✅ Vous êtes maintenant abonné aux notifications."
+                )
+                await send_telegram_message(chat_id, welcome_msg)
+                
+        return {"ok": True}
+    except Exception as e:
+        print(f"Telegram webhook error: {e}")
+        return {"ok": False, "error": str(e)}
+
+
+async def send_telegram_message(chat_id: int, message: str):
+    """Send a message to a specific chat"""
+    if not TELEGRAM_BOT_TOKEN:
+        return
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            await client.post(
+                f"{TELEGRAM_API_URL}/sendMessage",
+                json={
+                    "chat_id": chat_id,
+                    "text": message,
+                    "parse_mode": "HTML"
+                },
+                timeout=10
+            )
+        except Exception as e:
+            print(f"Failed to send Telegram message: {e}")
+
+
+@app.get("/telegram/setup")
+async def setup_telegram_webhook(request: Request):
+    """Setup Telegram webhook (call this once after deployment)"""
+    if not TELEGRAM_BOT_TOKEN:
+        return {"error": "TELEGRAM_BOT_TOKEN not configured"}
+    
+    base_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{base_url}/telegram/webhook"
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{TELEGRAM_API_URL}/setWebhook",
+            json={"url": webhook_url}
+        )
+        return response.json()
 
 
 def serialize_sessions():
